@@ -1,0 +1,43 @@
+#!/usr/bin/expect
+#Author: @Qu1nn
+#Changes the root password for any Linux Box specified by the user.
+#***The target linux boxes specified must be reachable from the box it's run from. (Same Resource Pool)
+#***The target linux boxes must also have the ssh service running.
+
+#Set Variables
+set timeout 15
+set username root
+set oldpass [lindex $argv 0]
+set newpass [lindex $argv 1]
+set targetip [lindex $argv 2]
+
+#Validate User Input
+if { $argc != 3 } {
+	send_user "Missing Command Line Arguments!\n"
+	send_user "Usage: ./root_reset.sh \[Old Password\] \[New Password\] \[Target IP\]\n"
+	exit 1
+}
+
+#Start SSH Session
+send_user "Changing the root password for $targetip...\n"
+spawn -noecho ssh -o StrictHostKeyChecking=no $username@$targetip
+expect {
+	"assword: " {
+		send "$oldpass\r\n"
+		expect {
+			"#" {
+				send "passwd\r"
+				expect "Enter new UNIX password: "
+				send "$newpass\r"
+				expect "Retype new UNIX password: "
+				send "$newpass\r"
+				expect "passwd: password updated successfully"
+				send "exit\r\n"
+			}
+			"assword: " {
+				send_user "\nLogin Failed\n"
+				exit 1
+			}
+		}
+	}
+}
